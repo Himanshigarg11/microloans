@@ -6,7 +6,7 @@ import authService from '../services/authService';
 import { Loader2, ArrowRight } from 'lucide-react';
 
 const CompleteBorrowerProfile = () => {
-  const { user, setUser, setActiveRole } = useAuth();
+  const { user, refreshUser, setActiveRole } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   
@@ -30,7 +30,7 @@ const CompleteBorrowerProfile = () => {
         loanPurposeHistory: formData.loanPurposeHistory
       });
       
-      setUser(updatedUser);
+      refreshUser();
       // Now that onboarding is complete, finish the role switch
       setActiveRole('borrower');
       addToast({ type: 'success', title: 'Profile Complete', message: 'You are now ready to borrow!' });

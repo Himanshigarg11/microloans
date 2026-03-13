@@ -9,16 +9,18 @@ const OfferCard = ({ offer, isBorrower, onAccept }) => {
       ? { border: 'border-red-200', text: 'text-red-700' }
       : { border: 'border-amber-200', text: 'text-amber-700' };
 
+  const displayRate = offer.interestRate < 1 ? (offer.interestRate * 100) : offer.interestRate;
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 transition hover:shadow-md flex flex-col justify-between gap-6">
       <div className="flex justify-between items-center">
          <div className="flex items-center gap-3">
            <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center border border-teal-100 flex-shrink-0">
-             <span className="text-xs font-bold text-[#174E4F]">{Math.round(offer.interestRate)}%</span>
+             <span className="text-xs font-bold text-[#174E4F]">{Math.round(displayRate)}%</span>
            </div>
            <div>
              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Interest Rate</p>
-             <p className="text-lg font-bold text-gray-900 leading-none">{offer.interestRate}% <span className="text-[10px] text-gray-400 font-medium">APR</span></p>
+             <p className="text-lg font-bold text-gray-900 leading-none">{displayRate.toFixed(1)}% <span className="text-[10px] text-gray-400 font-medium">APR</span></p>
            </div>
          </div>
           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border ${statusConfig.border} ${statusConfig.text}`}>

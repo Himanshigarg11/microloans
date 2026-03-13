@@ -11,7 +11,8 @@ const LoanForm = ({ onSubmit, isLoading }) => {
     purpose: '',
     repaymentPeriod: '12',
     collateralDescription: '',
-    loanScoreRequired: 0
+    loanScoreRequired: 0,
+    requestedInterestRate: ''
   });
   const [errors, setErrors] = useState({});
 
@@ -20,6 +21,7 @@ const LoanForm = ({ onSubmit, isLoading }) => {
     if (s === 1) {
       if (!validatePositiveNumber(formData.amount)) newErrors.amount = 'Please enter a positive loan amount.';
       if (!validatePositiveNumber(formData.repaymentPeriod)) newErrors.repaymentPeriod = 'Repayment period must be positive.';
+      if (formData.requestedInterestRate !== '' && (!validatePositiveNumber(formData.requestedInterestRate) || Number(formData.requestedInterestRate) > 100)) newErrors.requestedInterestRate = 'Interest rate must be 0-100%.';
     } else if (s === 2) {
       if (!validateRequired(formData.purpose)) newErrors.purpose = 'Please provide a purpose for the loan.';
     }
@@ -49,7 +51,8 @@ const LoanForm = ({ onSubmit, isLoading }) => {
         ...formData,
         amount: Number(formData.amount),
         repaymentPeriod: Number(formData.repaymentPeriod),
-        loanScoreRequired: Number(formData.loanScoreRequired)
+        loanScoreRequired: Number(formData.loanScoreRequired),
+        requestedInterestRate: formData.requestedInterestRate ? Number(formData.requestedInterestRate) / 100 : null
       });
     }
   };
@@ -103,6 +106,23 @@ const LoanForm = ({ onSubmit, isLoading }) => {
               {errors.amount && <span className="text-red-500 text-sm mt-1 ml-1">{errors.amount}</span>}
             </div>
 
+            <div className="flex flex-col">
+              <label htmlFor="requestedInterestRate" className="text-lg font-semibold text-gray-700 mb-2">Expected interest rate (%)</label>
+              <input 
+                type="number"
+                name="requestedInterestRate"
+                value={formData.requestedInterestRate}
+                onChange={handleChange}
+                placeholder="e.g. 8.5"
+                step="0.1"
+                min="0"
+                max="100"
+                className={`w-full bg-white border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-[#174E4F]/10 outline-none transition-all ${
+                  errors.requestedInterestRate ? 'border-red-400 bg-red-50' : 'focus:border-[#174E4F]'
+                }`}
+              />
+              {errors.requestedInterestRate && <span className="text-red-500 text-sm mt-1 ml-1">{errors.requestedInterestRate}</span>}
+            </div>
             <div className="flex flex-col">
               <label htmlFor="repaymentPeriod" className="text-lg font-semibold text-gray-700 mb-2">For how many months?</label>
               <select 
@@ -197,6 +217,12 @@ const LoanForm = ({ onSubmit, isLoading }) => {
                 <span className="text-slate-500 font-bold uppercase tracking-widest">Purpose</span>
                 <span className="text-2xl font-bold text-slate-900">{formData.purpose}</span>
               </div>
+              {formData.requestedInterestRate && (
+                <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                  <span className="text-slate-500 font-bold uppercase tracking-widest">Interest Rate</span>
+                  <span className="text-2xl font-bold text-slate-900">{formData.requestedInterestRate}%</span>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-4">

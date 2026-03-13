@@ -6,12 +6,14 @@ const RepaymentService = require('../services/repaymentService');
 const createRepayment = async (req, res) => {
   try {
     const { loanId, amountPaid, remainingBalance, paymentDate } = req.body;
+    const borrowerId = req.user?._id?.toString?.() || req.user?.id;
     
     const newRepayment = await RepaymentService.createRepayment({
       loanId,
       amountPaid,
       remainingBalance,
-      paymentDate
+      paymentDate,
+      borrowerId
     });
 
     res.status(201).json({

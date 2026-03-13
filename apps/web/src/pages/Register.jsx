@@ -59,7 +59,7 @@ const Register = () => {
     try {
       await register(formData);
       addToast({ type: 'success', title: 'Account Created!', message: 'Welcome to Lend Sphere.' });
-      navigate('/dashboard');
+      navigate('/select-role');
     } catch (err) {
       addToast({ 
         type: 'error', 

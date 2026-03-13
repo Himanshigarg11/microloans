@@ -4,14 +4,17 @@ const authService = {
   register: async (userData) => {
     try {
       const response = await apiClient.post('/auth/register', userData);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        if (response.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-          localStorage.setItem('role', response.data.user.role || '');
+      const data = response.data;
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        const userToStore = data.user || { ...data, id: data._id?.toString?.() || data._id };
+        if (userToStore && typeof userToStore === 'object') {
+          delete userToStore.token;
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          localStorage.setItem('role', userToStore.role || data.role || '');
         }
       }
-      return response.data;
+      return data;
     } catch (error) {
       console.error('Registration Service Error:', error.friendlyMessage || error.message);
       throw error;
@@ -21,14 +24,17 @@ const authService = {
   login: async (credentials) => {
     try {
       const response = await apiClient.post('/auth/login', credentials);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        if (response.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-          localStorage.setItem('role', response.data.user.role || '');
+      const data = response.data;
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        const userToStore = data.user || { ...data, id: data._id?.toString?.() || data._id };
+        if (userToStore && typeof userToStore === 'object') {
+          delete userToStore.token;
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          localStorage.setItem('role', userToStore.role || data.role || '');
         }
       }
-      return response.data;
+      return data;
     } catch (error) {
       console.error('Login Service Error:', error.friendlyMessage || error.message);
       throw error;
@@ -38,13 +44,17 @@ const authService = {
   switchRole: async (userId, newRole) => {
     try {
       const response = await apiClient.put(`/users/${userId}/role`, { role: newRole });
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data));
-        localStorage.setItem('role', response.data.role || '');
+      const data = response.data;
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        const userToStore = data.user || { ...data, id: data._id?.toString?.() || data._id };
+        delete userToStore.token;
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        localStorage.setItem('role', (userToStore.role || data.role) || '');
       }
-      return response.data;
+      return data;
     } catch (error) {
+      console.error('switchRole Service Error:', error.friendlyMessage || error.message);
       throw error;
     }
   },
@@ -52,12 +62,16 @@ const authService = {
   submitOnboarding: async (userId, onboardingData) => {
     try {
       const response = await apiClient.put(`/users/${userId}/onboarding`, onboardingData);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data));
+      const data = response.data;
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        const userToStore = data.user || { ...data, id: data._id?.toString?.() || data._id };
+        delete userToStore.token;
+        localStorage.setItem('user', JSON.stringify(userToStore));
       }
-      return response.data;
+      return data;
     } catch (error) {
+      console.error('submitOnboarding Service Error:', error.friendlyMessage || error.message);
       throw error;
     }
   },
@@ -74,11 +88,16 @@ const authService = {
   },
 
   getCurrentUser: () => {
-    // Try to get from localStorage first for faster access
+    const normalizeUser = (u) => {
+      if (!u) return null;
+      const id = u.id || u._id?.toString?.() || u._id;
+      return { ...u, id, _id: u._id || id };
+    };
+
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        return JSON.parse(storedUser);
+        return normalizeUser(JSON.parse(storedUser));
       } catch (e) {
         console.error('Error parsing stored user', e);
       }
@@ -87,17 +106,16 @@ const authService = {
     const token = localStorage.getItem('token');
     if (!token) return null;
     try {
-      // Simple JWT payload decode (assuming it's a standard JWT)
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
-
-      const user = JSON.parse(jsonPayload);
-      // Backfill localStorage if missing
-      localStorage.setItem('user', JSON.stringify(user));
-      if (user.role) localStorage.setItem('role', user.role);
+      const user = normalizeUser(JSON.parse(jsonPayload));
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+        if (user.role) localStorage.setItem('role', user.role);
+      }
       return user;
     } catch (e) {
       console.error('Error decoding token', e);

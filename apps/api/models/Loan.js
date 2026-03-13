@@ -31,6 +31,11 @@ const loanSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  requestedInterestRate: {
+    type: Number,
+    min: 0,
+    default: null
+  },
   status: {
     type: String,
     enum: [
@@ -45,7 +50,7 @@ const loanSchema = new mongoose.Schema({
     ],
     default: 'pending'
   },
-  interestRate: { // Set after offer is selected
+  interestRate: {
     type: Number,
     default: null
   },

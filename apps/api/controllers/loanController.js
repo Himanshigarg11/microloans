@@ -6,7 +6,7 @@ const LoanLifecycleService = require('../services/loanLifecycleService');
  */
 const createLoan = async (req, res) => {
   try {
-    const { amount, purpose, repaymentPeriod, collateralDescription, loanScoreRequired } = req.body;
+    const { amount, purpose, repaymentPeriod, collateralDescription, loanScoreRequired, requestedInterestRate } = req.body;
     
     // Use req.user.id from protect middleware instead of body
     const borrowerId = req.user.id;
@@ -17,7 +17,8 @@ const createLoan = async (req, res) => {
       purpose,
       repaymentPeriod,
       collateralDescription,
-      loanScoreRequired
+      loanScoreRequired,
+      requestedInterestRate
     });
 
     res.status(201).json({
@@ -41,9 +42,8 @@ const createLoan = async (req, res) => {
 const getLoans = async (req, res) => {
   try {
     // Extract filter query parameters
-    const { status, minAmount, maxAmount, repaymentPeriod, loanScoreRequired, borrowerId, page = 1, limit = 10 } = req.query;
+    const { status, minAmount, maxAmount, repaymentPeriod, loanScoreRequired, borrowerId, maxInterestRate, page = 1, limit = 10 } = req.query;
     
-    // Build query object to pass to the service
     const queryParams = {};
     if (status) queryParams.status = status;
     if (minAmount) queryParams.minAmount = Number(minAmount);
@@ -51,6 +51,7 @@ const getLoans = async (req, res) => {
     if (repaymentPeriod) queryParams.repaymentPeriod = Number(repaymentPeriod);
     if (loanScoreRequired) queryParams.loanScoreRequired = Number(loanScoreRequired);
     if (borrowerId) queryParams.borrowerId = borrowerId;
+    if (maxInterestRate !== undefined) queryParams.maxInterestRate = Number(maxInterestRate);
 
     // Convert pagination params to numbers
     const pageNum = parseInt(page, 10);

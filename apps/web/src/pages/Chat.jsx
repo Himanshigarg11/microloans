@@ -30,7 +30,7 @@ const Chat = () => {
            <MessageSquare className="mx-auto w-12 h-12 text-gray-300" />
            <p className="text-sm font-medium text-gray-400">Please select a loan from the marketplace to start chatting.</p>
            <button 
-             onClick={() => navigate('/marketplace')}
+             onClick={() => navigate('/dashboard/marketplace')}
              className="mt-2 bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm px-6 py-2 rounded-lg transition"
            >
              Browse Marketplace

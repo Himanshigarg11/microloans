@@ -25,10 +25,20 @@ const loanOfferSchema = new mongoose.Schema({
     type: String,
     enum: [
       'pending',  // Offer submitted, awaiting borrower decision
-      'accepted', // Borrower accepted this offer
-      'rejected'  // Borrower rejected this offer or another offer was selected
+      'accepted',
+      'rejected',
+      'countered'  // Borrower sent counter-offer
     ],
     default: 'pending'
+  },
+  parentOfferId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LoanOffer',
+    default: null
+  },
+  message: {
+    type: String,
+    default: ''
   },
   createdAt: {
     type: Date,

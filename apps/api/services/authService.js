@@ -54,15 +54,20 @@ const registerUser = async (userData) => {
   });
 
   if (user) {
-    return {
+    const userPayload = {
       _id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
       loanScore: user.loanScore,
       borrowerProfileComplete: user.borrowerProfileComplete,
       lenderProfileComplete: user.lenderProfileComplete,
+    };
+    return {
+      ...userPayload,
       token: generateToken(user),
+      user: userPayload,
     };
   } else {
     throw new Error('Invalid user data');
@@ -74,15 +79,20 @@ const loginUser = async (email, password) => {
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
-    return {
+    const userPayload = {
       _id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
       loanScore: user.loanScore,
       borrowerProfileComplete: user.borrowerProfileComplete,
       lenderProfileComplete: user.lenderProfileComplete,
+    };
+    return {
+      ...userPayload,
       token: generateToken(user),
+      user: userPayload,
     };
   } else {
     throw new Error('Invalid email or password');

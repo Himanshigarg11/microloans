@@ -55,9 +55,14 @@ class LoanService {
       }
       
       if (query.loanScoreRequired !== undefined) {
-        // typically users filtering for a required score want loans asking for that score or LESS
-        // e.g., if a lender has a score requirement threshold
         dbQuery.loanScoreRequired = { $lte: query.loanScoreRequired };
+      }
+      if (query.maxInterestRate !== undefined) {
+        dbQuery.$or = [
+          { requestedInterestRate: { $lte: query.maxInterestRate } },
+          { requestedInterestRate: null },
+          { interestRate: { $lte: query.maxInterestRate } }
+        ];
       }
       
       const skip = (page - 1) * limit;
@@ -67,7 +72,7 @@ class LoanService {
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
-          // .populate('borrowerId', 'name') // Populate borrower info if needed
+          .populate('borrowerId', 'name loanScore income occupation creditScore incomeRange employmentType loanHistorySummary')
           .exec(),
         Loan.countDocuments(dbQuery)
       ]);
@@ -91,7 +96,7 @@ class LoanService {
   static async getLoanById(loanId) {
     try {
       const loan = await Loan.findById(loanId)
-        // .populate('borrowerId', 'name') // Populate borrower info if needed
+        .populate('borrowerId', 'name loanScore income occupation creditScore incomeRange employmentType loanHistorySummary')
         .exec();
         
       return loan;

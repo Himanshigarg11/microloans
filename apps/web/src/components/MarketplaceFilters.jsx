@@ -6,7 +6,8 @@ const MarketplaceFilters = ({ onFilterChange }) => {
     minAmount: '',
     maxAmount: '',
     repaymentPeriod: '',
-    loanScoreRequired: ''
+    loanScoreRequired: '',
+    maxInterestRate: ''
   });
 
   const handleChange = (e) => {
@@ -22,7 +23,8 @@ const MarketplaceFilters = ({ onFilterChange }) => {
         minAmount: filters.minAmount ? Number(filters.minAmount) : '',
         maxAmount: filters.maxAmount ? Number(filters.maxAmount) : '',
         repaymentPeriod: filters.repaymentPeriod ? Number(filters.repaymentPeriod) : '',
-        loanScoreRequired: filters.loanScoreRequired ? Number(filters.loanScoreRequired) : ''
+        loanScoreRequired: filters.loanScoreRequired ? Number(filters.loanScoreRequired) : '',
+        maxInterestRate: filters.maxInterestRate ? Number(filters.maxInterestRate) / 100 : ''
       };
       onFilterChange(submittedFilters);
     }
@@ -33,7 +35,8 @@ const MarketplaceFilters = ({ onFilterChange }) => {
       minAmount: '',
       maxAmount: '',
       repaymentPeriod: '',
-      loanScoreRequired: ''
+      loanScoreRequired: '',
+      maxInterestRate: ''
     };
     setFilters(resetFilters);
     if (onFilterChange) onFilterChange(resetFilters);
@@ -88,6 +91,17 @@ const MarketplaceFilters = ({ onFilterChange }) => {
              placeholder="e.g. 700"
              value={filters.loanScoreRequired}
              onChange={(e) => setFilters({...filters, loanScoreRequired: e.target.value})}
+             className="w-full bg-white border border-gray-200 text-sm px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F] outline-none transition-all"
+           />
+        </div>
+        <div>
+           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-1">Max Interest %</label>
+           <input
+             type="number"
+             placeholder="e.g. 12"
+             step="0.5"
+             value={filters.maxInterestRate}
+             onChange={(e) => setFilters({...filters, maxInterestRate: e.target.value})}
              className="w-full bg-white border border-gray-200 text-sm px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F] outline-none transition-all"
            />
         </div>

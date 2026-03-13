@@ -40,6 +40,20 @@ const LoanCard = ({ loan, onAction }) => {
           </p>
         </div>
 
+        {loan.borrowerId && typeof loan.borrowerId === 'object' && (
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Borrower Info</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {(loan.borrowerId.loanScore != null || loan.borrowerId.creditScore != null) && (
+                <span>Score: {loan.borrowerId.creditScore ?? loan.borrowerId.loanScore ?? '—'}</span>
+              )}
+              {loan.borrowerId.income != null && <span>Income: ₹{(loan.borrowerId.income || 0).toLocaleString()}</span>}
+              {loan.borrowerId.occupation && <span>Occupation: {loan.borrowerId.occupation}</span>}
+              {loan.borrowerId.employmentType && <span>Type: {loan.borrowerId.employmentType}</span>}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-0.5">
             <p className="text-[10px] font-semibold text-[#174E4F] uppercase tracking-wider">Purpose</p>
@@ -49,6 +63,17 @@ const LoanCard = ({ loan, onAction }) => {
             <p className="text-[10px] font-semibold text-[#174E4F] uppercase tracking-wider">Duration</p>
             <p className="text-sm font-medium text-gray-700">{loan.repaymentPeriod} Months</p>
           </div>
+          {(loan.requestedInterestRate != null || loan.interestRate != null) && (
+            <div className="space-y-0.5 col-span-2">
+              <p className="text-[10px] font-semibold text-[#174E4F] uppercase tracking-wider">Interest Rate</p>
+              <p className="text-sm font-medium text-gray-700">
+                {(() => {
+                  const r = loan.interestRate ?? loan.requestedInterestRate;
+                  return (r < 1 ? r * 100 : r).toFixed(1);
+                })()}%
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import repaymentService from '../services/repaymentService';
 import loanService from '../services/loanService';
 import { Loader2, IndianRupee, Calendar, CheckCircle2 } from 'lucide-react';
@@ -9,6 +10,7 @@ import { validatePositiveNumber } from '../utils/validation';
 const Repayments = () => {
   const { t } = useTranslation();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [repayments, setRepayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -27,7 +29,9 @@ const Repayments = () => {
           loanService.getLoans({ status: 'funded', borrowerId: user.id }),
           loanService.getLoans({ status: 'repayment', borrowerId: user.id })
         ]);
-        const allLoans = [...fundedRes.data, ...repaymentRes.data];
+        const funded = fundedRes?.data ?? fundedRes ?? [];
+        const repayment = repaymentRes?.data ?? repaymentRes ?? [];
+        const allLoans = [...(Array.isArray(funded) ? funded : []), ...(Array.isArray(repayment) ? repayment : [])];
         setLoans(allLoans);
         if (allLoans.length > 0) setSelectedLoanId(allLoans[0]._id);
       } catch (err) {
@@ -46,7 +50,7 @@ const Repayments = () => {
       try {
         setLoading(true);
         const response = await repaymentService.getRepaymentHistory(selectedLoanId);
-        setRepayments(response.data);
+        setRepayments(response?.data ?? response ?? []);
       } catch (err) {
         console.error('Failed to fetch repayments:', err);
       } finally {
@@ -94,18 +98,18 @@ const Repayments = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">{t('repayments')}</h1>
-        <p className="text-sm text-gray-600 mt-1">Keep track of your financial commitments and growth.</p>
+        <p className="text-sm text-gray-600 mt-1">{t('repayments_subtitle')}</p>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
-        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2 px-1">Select Loan</label>
+        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('select_loan')}</label>
         <select 
           value={selectedLoanId} 
           onChange={(e) => setSelectedLoanId(e.target.value)}
           className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F] transition-all bg-white"
         >
           {loans.length === 0 ? (
-            <option value="">No active loans in repayment phase</option>
+            <option value="">{t('no_active_loans')}</option>
           ) : (
             loans.map(loan => (
               <option key={loan._id} value={loan._id}>
@@ -119,23 +123,23 @@ const Repayments = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-5 md:p-6">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-             <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
+             <h3 className="text-lg font-semibold text-gray-900">{t('payment_history')}</h3>
               {!showForm && (
                 <button 
                   onClick={() => setShowForm(true)}
                   className="bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all"
                 >
-                  Make Payment
+                  {t('make_payment')}
                 </button>
               )}
           </div>
 
           {showForm && (
             <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 mb-8">
-               <h4 className="text-sm font-bold text-gray-900 mb-4">New Repayment</h4>
+               <h4 className="text-sm font-bold text-gray-900 mb-4">{t('new_repayment')}</h4>
                 <form onSubmit={handleRepaymentSubmit} className="space-y-4">
                   <div className="space-y-1.5">
-                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Amount (₹)</label>
+                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">{t('amount_rupee')}</label>
                      <input 
                         type="number"
                         value={amountPaid}
@@ -153,7 +157,7 @@ const Repayments = () => {
                        onClick={() => setShowForm(false)}
                        className="flex-1 bg-white border border-gray-200 text-gray-600 font-semibold text-xs py-2 rounded-lg hover:bg-gray-100 transition-all"
                      >
-                       Cancel
+                       {t('cancel')}
                      </button>
                       <button 
                         type="submit"
@@ -161,7 +165,7 @@ const Repayments = () => {
                         className="flex-[2] bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
                       >
                         {submitting ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                        Record Payment
+                        {t('record_payment')}
                       </button>
                   </div>
                </form>
@@ -175,7 +179,7 @@ const Repayments = () => {
           ) : repayments.length === 0 ? (
             <div className="py-12 text-center space-y-4">
                <Calendar size={48} className="mx-auto text-gray-200" />
-               <p className="text-sm font-medium text-gray-400">No repayment records found for this loan.</p>
+               <p className="text-sm font-medium text-gray-400">{t('no_repayment_records')}</p>
             </div>
           ) : (
             <div className="space-y-3">

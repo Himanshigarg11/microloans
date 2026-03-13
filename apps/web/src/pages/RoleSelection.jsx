@@ -1,23 +1,25 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { HandCoins, TrendingUp, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const RoleSelection = () => {
+  const { t } = useTranslation();
   const { setActiveRole, user } = useAuth();
   const navigate = useNavigate();
 
-  const handleSelect = (role) => {
-    setActiveRole(role);
-    navigate('/');
+  const handleSelect = async (role) => {
+    await setActiveRole(role);
+    navigate('/dashboard');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="max-w-4xl w-full space-y-12">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">How would you like to use Lend Sphere today?</h1>
-          <p className="text-gray-500 text-lg">Choose your path and start your financial journey.</p>
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">{t('role_selection_title')}</h1>
+          <p className="text-gray-500 text-lg">{t('role_selection_subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -30,13 +32,13 @@ const RoleSelection = () => {
               <HandCoins className="w-8 h-8 text-[#174E4F]" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-gray-900">Borrow Money</h3>
+              <h3 className="text-2xl font-bold text-gray-900">{t('borrow_money')}</h3>
               <p className="text-gray-500 leading-relaxed">
-                Apply for community-funded loans with fair rates and flexible terms.
+                {t('borrow_description')}
               </p>
             </div>
             <div className="flex items-center gap-2 text-[#174E4F] font-bold">
-              Access Borrower Dashboard <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              {t('access_borrower_dashboard')} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
 
@@ -49,20 +51,20 @@ const RoleSelection = () => {
               <TrendingUp className="w-8 h-8" />
             </div>
             <div className="space-y-2 text-white">
-              <h3 className="text-2xl font-bold">Lend Money</h3>
+              <h3 className="text-2xl font-bold">{t('lend_money')}</h3>
               <p className="text-white/70 leading-relaxed">
-                Put your savings to work and earn steady returns while helping others.
+                {t('lend_description')}
               </p>
             </div>
             <div className="flex items-center gap-2 text-teal-400 font-bold">
-              Access Lender Marketplace <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              {t('access_lender_marketplace')} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
         </div>
 
         <div className="text-center">
           <p className="text-sm text-gray-400">
-            You can always switch between modes later from your profile.
+            {t('switch_modes_later')}
           </p>
         </div>
       </div>

@@ -34,7 +34,7 @@ const createOffer = async (req, res) => {
  */
 const getOffersForLoan = async (req, res) => {
   try {
-    const { loanId } = req.params;
+    const loanId = req.params.loanId || req.params.id;
 
     const offers = await OfferService.getOffersForLoan(loanId);
 

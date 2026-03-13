@@ -59,7 +59,23 @@ const userSchema = new mongoose.Schema({
     required: false,
   },
   riskPreference: {
-    type: String, // e.g., 'conservative', 'moderate', 'aggressive'
+    type: String,
+    required: false,
+  },
+  creditScore: {
+    type: Number,
+    required: false,
+  },
+  incomeRange: {
+    type: String,
+    required: false,
+  },
+  employmentType: {
+    type: String,
+    required: false,
+  },
+  loanHistorySummary: {
+    type: String,
     required: false,
   },
   createdAt: {

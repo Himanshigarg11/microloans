@@ -16,16 +16,18 @@ const CreateLoan = () => {
   const handleLoanSubmit = async (loanData) => {
     try {
       setLoading(true);
+      await loanService.createLoan(loanData);
       addToast({ type: 'success', title: 'Request Created', message: 'Your loan request has been submitted successfully.' });
       setSuccess(true);
-      // Redirect based on role – Borrowers shouldn't go to Marketplace
       setTimeout(() => navigate('/dashboard'), 3000);
     } catch (err) {
       addToast({ 
         type: 'error', 
         title: 'Submission Failed', 
-        message: err.friendlyMessage || 'Unable to create your loan request.' 
+        message: err.friendlyMessage || err.message || 'Unable to create your loan request.' 
       });
+    } finally {
+      setLoading(false);
     }
   };
 

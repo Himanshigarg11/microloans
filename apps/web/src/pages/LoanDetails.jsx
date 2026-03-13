@@ -35,8 +35,8 @@ const LoanDetails = () => {
           loanService.getLoanById(id),
           offerService.getLoanOffers(id)
         ]);
-        setLoan(loanRes.data);
-        setOffers(offersRes.data);
+        setLoan(loanRes.data ?? loanRes);
+        setOffers(offersRes.data ?? offersRes ?? []);
       } catch (err) {
         console.error('Failed to fetch loan details:', err.friendlyMessage || err.message);
         setError(err.friendlyMessage || 'Could not find the requested loan.');
@@ -56,7 +56,6 @@ const LoanDetails = () => {
 
   const validateOffer = () => {
     const newErrors = {};
-    if (!validatePositiveNumber(offerData.amount)) newErrors.amount = 'Please enter a positive amount.';
     if (!validatePercentage(offerData.interestRate)) newErrors.interestRate = 'Rate must be between 0 and 100%.';
     setOfferErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -70,9 +69,8 @@ const LoanDetails = () => {
       setSubmittingOffer(true);
       await offerService.submitOffer({
         loanId: id,
-        amount: Number(offerData.amount),
-        interestRate: Number(offerData.interestRate)
-        // lenderId now derived on backend
+        interestRate: Number(offerData.interestRate) / 100,
+        repaymentPeriod: loan?.repaymentPeriod || 12
       });
       addToast({ type: 'success', title: 'Offer Sent', message: 'Your community offer has been submitted.' });
       setOfferData({ amount: '', interestRate: '' });
@@ -168,7 +166,7 @@ const LoanDetails = () => {
           </div>
 
           <div className="flex gap-2">
-            {loan.status === 'pending' && user && loan.borrowerId && (user.id === loan.borrowerId || user.id === loan.borrowerId._id) && (
+            {loan.status === 'pending' && user && loan.borrowerId && (String(user.id) === String(loan.borrowerId) || (loan.borrowerId?._id && String(user.id) === String(loan.borrowerId._id))) && (
               <button 
                 onClick={handleOpenLoan}
                 className="bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm py-2 px-6 rounded-lg shadow-sm transition-all"
@@ -176,7 +174,7 @@ const LoanDetails = () => {
                 Open for Offers
               </button>
             )}
-            {loan.status === 'offer_selected' && user && loan.borrowerId && (user.id === loan.borrowerId || user.id === loan.borrowerId._id) && (
+            {loan.status === 'offer_selected' && user && loan.borrowerId && (String(user.id) === String(loan.borrowerId) || (loan.borrowerId?._id && String(user.id) === String(loan.borrowerId._id))) && (
               <button 
                 onClick={handleFundLoan}
                 className="bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm py-2 px-6 rounded-lg shadow-sm transition-all"
@@ -212,7 +210,53 @@ const LoanDetails = () => {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Min. Score Req.</p>
               <p className="text-2xl font-bold text-gray-900">{loan.loanScoreRequired}</p>
            </div>
+           {(loan.requestedInterestRate != null || loan.interestRate != null) && (
+             <div className="space-y-1.5 md:col-span-2">
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Interest Rate</p>
+               <p className="text-lg font-semibold text-gray-900">
+                 {((loan.interestRate ?? loan.requestedInterestRate) < 1 
+                   ? (loan.interestRate ?? loan.requestedInterestRate) * 100 
+                   : (loan.interestRate ?? loan.requestedInterestRate)).toFixed(1)}%
+               </p>
+             </div>
+           )}
         </div>
+
+        {loan.borrowerId && typeof loan.borrowerId === 'object' && (
+          <div className="p-6 md:p-8 border-t border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Borrower Risk Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-gray-50 rounded-xl p-6">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Credit / Loan Score</p>
+                <p className="text-lg font-semibold text-gray-900">{loan.borrowerId.creditScore ?? loan.borrowerId.loanScore ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Income</p>
+                <p className="text-lg font-semibold text-gray-900">₹{(loan.borrowerId.income || 0).toLocaleString()}/mo</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Occupation</p>
+                <p className="text-lg font-semibold text-gray-900">{loan.borrowerId.occupation || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Employment Type</p>
+                <p className="text-lg font-semibold text-gray-900">{loan.borrowerId.employmentType || '—'}</p>
+              </div>
+              {loan.collateralDescription && (
+                <div className="md:col-span-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Collateral</p>
+                  <p className="text-sm font-medium text-gray-700">{loan.collateralDescription}</p>
+                </div>
+              )}
+              {loan.borrowerId.loanHistorySummary && (
+                <div className="md:col-span-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Loan History</p>
+                  <p className="text-sm font-medium text-gray-700">{loan.borrowerId.loanHistorySummary}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Offer Form for Lenders */}
@@ -223,18 +267,10 @@ const LoanDetails = () => {
            </h3>
            <form onSubmit={handleSubmitOffer} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                 <label className="text-xs font-semibold text-gray-700">Lending Amount (₹)</label>
-                 <input 
-                    type="number"
-                    name="amount"
-                    value={offerData.amount}
-                    onChange={handleOfferChange}
-                    placeholder="e.g. 10000"
-                    className={`w-full border rounded-lg px-3 py-2 text-sm font-medium outline-none transition-all ${
-                      offerErrors.amount ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F]'
-                    }`}
-                 />
-                 {offerErrors.amount && <p className="text-red-500 text-[10px] font-semibold">{offerErrors.amount}</p>}
+                 <label className="text-xs font-semibold text-gray-700">Loan Amount (from request)</label>
+                 <div className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 bg-gray-50">
+                   ₹{loan.amount?.toLocaleString()}
+                 </div>
               </div>
               <div className="space-y-1.5">
                  <label className="text-xs font-semibold text-gray-700">Interest Rate (%)</label>
@@ -282,7 +318,7 @@ const LoanDetails = () => {
                 <OfferCard 
                   key={offer._id} 
                   offer={offer} 
-                  isBorrower={user && loan.borrower && user.id === loan.borrower._id}
+                  isBorrower={user && (String(user.id) === String(loan.borrowerId) || (loan.borrowerId?._id && String(user.id) === String(loan.borrowerId._id)))}
                   onAccept={handleAcceptOffer}
                 />
               ))}

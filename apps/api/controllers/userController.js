@@ -37,12 +37,20 @@ const updateRole = async (req, res) => {
     user.role = role;
     await user.save();
 
-    res.status(200).json({
+    const userPayload = {
       _id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user)
+      loanScore: user.loanScore,
+      borrowerProfileComplete: user.borrowerProfileComplete,
+      lenderProfileComplete: user.lenderProfileComplete,
+    };
+    res.status(200).json({
+      ...userPayload,
+      token: generateToken(user),
+      user: userPayload,
     });
 
   } catch (error) {
@@ -87,15 +95,20 @@ const saveOnboardingProfile = async (req, res) => {
 
     await user.save();
 
-    res.status(200).json({
+    const userPayload = {
       _id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
-      role: user.role, // role might not have changed, just the profile completeness
+      role: user.role,
       loanScore: user.loanScore,
       borrowerProfileComplete: user.borrowerProfileComplete,
       lenderProfileComplete: user.lenderProfileComplete,
-      token: generateToken({ ...user._doc, role: req.user.role }) // Preserve the active role in JWT
+    };
+    res.status(200).json({
+      ...userPayload,
+      token: generateToken({ ...user._doc, role: req.user.role }),
+      user: userPayload,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

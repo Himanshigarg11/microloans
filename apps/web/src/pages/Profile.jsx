@@ -20,7 +20,7 @@ const Profile = () => {
       if (!user) return;
       try {
         const response = await profileService.getProfile(user.id);
-        setProfile(response.data);
+        setProfile(response);
       } catch (err) {
         console.error('Profile fetch error:', err);
         addToast({ 

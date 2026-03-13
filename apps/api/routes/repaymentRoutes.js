@@ -6,7 +6,7 @@ const { protect } = require('../middleware/authMiddleware');
 
 // @route   POST /api/repayments
 // @desc    Record a new loan repayment
-// @access  Private (Borrower)
+// @access  Private (verified borrower of the loan in RepaymentService)
 router.post('/', protect, repaymentController.createRepayment);
 
 module.exports = router;

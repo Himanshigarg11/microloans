@@ -10,13 +10,15 @@ class RepaymentService {
    */
   static async createRepayment(repaymentData) {
     try {
-      const { loanId, amountPaid } = repaymentData;
+      const { loanId, amountPaid, borrowerId } = repaymentData;
 
-      // Ensure the loan exists and is in a state where repayments are allowed
       const loan = await Loan.findById(loanId);
       if (!loan) throw new Error('Loan not found');
       if (loan.status !== 'funded' && loan.status !== 'repayment') {
         throw new Error('Loan is not currently in repayment phase');
+      }
+      if (borrowerId && loan.borrowerId.toString() !== borrowerId.toString()) {
+        throw new Error('Not authorized to record repayment for this loan');
       }
 
       // In a real application, calculate actual remaining balance by fetching 

@@ -35,11 +35,11 @@ const Dashboard = () => {
         }
 
         const results = await Promise.all(promises);
-        setProfile(results[0].data);
-        setLoans(results[1].data);
+        setProfile(results[0]);
+        setLoans(results[1]?.data ?? results[1] ?? []);
         
         if (activeRole === 'lender' && results[2]) {
-          setInvestmentCount(results[2].data?.length || 0);
+          setInvestmentCount((results[2]?.data ?? results[2] ?? []).length);
         }
       } catch (err) {
         console.error('Dashboard fetch error:', err);
@@ -102,7 +102,7 @@ const Dashboard = () => {
                 <p className="text-3xl font-bold text-green-600 mt-2">{completedLoans.length}</p>
               </div>
               <button onClick={() => navigate('/dashboard/repayments')} className="mt-4 w-full border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-sm py-2 rounded-lg transition-all">
-                View History
+                {t('view_history')}
               </button>
             </div>
           </div>
@@ -111,7 +111,7 @@ const Dashboard = () => {
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="font-semibold text-gray-900">Your Recent Loans</h3>
-              <button onClick={() => navigate('/dashboard/repayments')} className="text-[#174E4F] text-xs font-bold hover:underline">View All</button>
+              <button onClick={() => navigate('/dashboard/repayments')} className="text-[#174E4F] text-xs font-bold hover:underline">{t('view_all')}</button>
             </div>
             <div className="divide-y divide-gray-100">
               {loans.length === 0 ? (
@@ -120,7 +120,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 loans.slice(0, 5).map(loan => (
-                  <div key={loan._id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/marketplace/${loan._id}`)}>
+                  <div key={loan._id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer group" onClick={() => navigate((loan.status === 'funded' || loan.status === 'repayment') ? '/dashboard/repayments' : `/dashboard/marketplace/${loan._id}`)}>
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${loan.status === 'funded' ? 'bg-green-500' : loan.status === 'open_for_offers' ? 'bg-teal-500' : 'bg-amber-500'}`}>
                         <FileText size={18} />

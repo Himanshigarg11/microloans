@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, User } from 'lucide-react';
 import authService from '../services/authService';
 import messageService from '../services/messageService';
+import { useToast } from '../context/ToastContext';
 
 const ChatBox = ({ loanId }) => {
+  const { addToast } = useToast();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
@@ -19,7 +21,7 @@ const ChatBox = ({ loanId }) => {
     try {
       setLoading(true);
       const response = await messageService.getLoanMessages(loanId);
-      setMessages(response.data);
+      setMessages(response?.data ?? response ?? []);
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     } finally {
@@ -55,7 +57,11 @@ const ChatBox = ({ loanId }) => {
       setNewMessage('');
       fetchMessages(); // Refresh immediately
     } catch (error) {
-      console.error('Failed to send message:', error.friendlyMessage || error.message);
+      addToast({
+        type: 'error',
+        title: 'Send Failed',
+        message: error.friendlyMessage || error.response?.data?.message || error.message || 'Failed to send message.'
+      });
     }
   };
 
@@ -79,7 +85,7 @@ const ChatBox = ({ loanId }) => {
         ) : (
           messages.map((msg, index) => {
             const senderId = typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
-            const isMe = currentUser && senderId === currentUser.id;
+            const isMe = currentUser && String(senderId) === String(currentUser.id || currentUser._id);
             const senderName = msg.senderId?.name || 'User';
 
             return (

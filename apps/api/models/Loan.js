@@ -50,6 +50,11 @@ const loanSchema = new mongoose.Schema({
     ],
     default: 'pending'
   },
+  selectedLenderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   interestRate: {
     type: Number,
     default: null

@@ -1,16 +1,19 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShoppingBag, User, MessageCircle, LogOut, PlusCircle, Menu, X, TrendingUp, FileText, Repeat } from 'lucide-react';
+import { Home, ShoppingBag, User, MessageCircle, LogOut, PlusCircle, Menu, X, TrendingUp, FileText, Repeat, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
+import { useNotifications } from '../context/NotificationContext';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, logout, activeRole, setActiveRole } = useAuth();
+  const { notifications, unreadCount, markAllRead } = useNotifications();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Shared links visible to all roles
   const sharedLinks = [
@@ -120,11 +123,53 @@ const Navbar = () => {
           <div className="relative group">
             <button 
               className="p-1.5 text-gray-500 hover:text-[#174E4F] hover:bg-gray-100 rounded-lg transition-all relative"
-              onClick={() => alert('Work in progress: Push notifications will be integrated here.')}
+              onClick={() => {
+                setShowNotifications((prev) => !prev);
+                if (unreadCount > 0) {
+                  markAllRead();
+                }
+              }}
             >
-              <div className="w-2 h-2 bg-red-500 rounded-full absolute top-1 right-1 border-2 border-white" />
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 flex items-center justify-center px-1 border-2 border-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+              <Bell className="w-5 h-5" />
             </button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-widest">
+                    Notifications
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {notifications.length} total
+                  </span>
+                </div>
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-gray-400 italic">
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id || n._id}
+                        className={`px-4 py-3 text-xs ${
+                          n.isRead ? 'bg-white' : 'bg-teal-50/40'
+                        }`}
+                      >
+                        <p className="font-medium text-gray-800">{n.message}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {new Date(n.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {user && (

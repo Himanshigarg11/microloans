@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const LoanScoreService = require('../services/loanScoreService');
 
 // Generate JWT for user (copied from authService for role updates)
 const generateToken = (user) => {
@@ -64,7 +65,18 @@ const updateRole = async (req, res) => {
 const saveOnboardingProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role, loanPurposeHistory, income, investmentCapacity, riskPreference } = req.body;
+    const {
+      role,
+      loanPurposeHistory,
+      income,
+      investmentCapacity,
+      riskPreference,
+      assets,
+      propertyValue,
+      gold,
+      existingLoans,
+      employmentType
+    } = req.body;
 
     if (req.user._id.toString() !== id) {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
@@ -79,12 +91,57 @@ const saveOnboardingProfile = async (req, res) => {
       if (loanPurposeHistory) user.loanPurposeHistory = loanPurposeHistory;
       if (typeof income === 'number') {
         user.income = income;
-        // Recalculate loan score if income changes
-        const calculatedIncome = Number(user.income) || 0;
-        const calculatedAssets = Number(user.assets) || 0;
-        user.loanScore = Math.floor((calculatedIncome + calculatedAssets) / 10);
       }
+      if (typeof assets === 'number') {
+        user.assets = assets;
+      }
+      if (typeof propertyValue === 'number') {
+        user.propertyValue = propertyValue;
+      }
+      if (typeof gold === 'number') {
+        user.gold = gold;
+      }
+      if (typeof existingLoans === 'number') {
+        user.existingLoans = existingLoans;
+      }
+      if (employmentType) {
+        user.employmentType = employmentType;
+      }
+
+      // Recalculate loan score from financial profile
+      const incomeValue = Number(user.income) || 0;
+      const assetsValue = Number(user.assets) || 0;
+      const propertyValueValue = Number(user.propertyValue) || 0;
+      const goldValue = Number(user.gold) || 0;
+      const existingLoansValue = Number(user.existingLoans) || 0;
+
+      let score = 300;
+
+      score += Math.min(400, incomeValue / 100);
+      score += Math.min(200, assetsValue / 1000);
+      score += Math.min(150, propertyValueValue / 100000);
+      score += Math.min(100, goldValue / 50000);
+
+      if (user.employmentType === 'salaried') score += 50;
+      else if (user.employmentType === 'government') score += 80;
+      else if (user.employmentType === 'self_employed') score += 30;
+      else if (user.employmentType === 'unemployed') score -= 80;
+
+      score -= existingLoansValue * 20;
+
+      if (score < 0) score = 0;
+
+      user.loanScore = Math.floor(score);
       user.borrowerProfileComplete = true;
+
+      try {
+        const loanScore = await LoanScoreService.getOrCreateLoanScore(user._id);
+        loanScore.currentScore = user.loanScore;
+        if (!loanScore.scoreUsed) loanScore.scoreUsed = 0;
+        await loanScore.save();
+      } catch (e) {
+        console.error('Failed to sync LoanScore with borrower profile', e);
+      }
     } else if (role === 'lender') {
       if (investmentCapacity) user.investmentCapacity = investmentCapacity;
       if (riskPreference) user.riskPreference = riskPreference;

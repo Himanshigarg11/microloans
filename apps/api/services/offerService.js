@@ -1,5 +1,6 @@
 const LoanOffer = require('../models/LoanOffer');
 const Loan = require('../models/Loan');
+const NotificationService = require('./notificationService');
 
 class OfferService {
   /**
@@ -19,6 +20,22 @@ class OfferService {
 
       const offer = new LoanOffer(offerData);
       const savedOffer = await offer.save();
+
+      // Notify borrower that a new offer has been submitted
+      try {
+        await NotificationService.createAndEmit(loan.borrowerId, 'offer_submitted', {
+          loanId: loan._id,
+          offerId: savedOffer._id,
+          message: 'A new lender has submitted an offer on your loan.',
+          metadata: {
+            interestRate: savedOffer.interestRate,
+            repaymentPeriod: savedOffer.repaymentPeriod
+          }
+        });
+      } catch (e) {
+        console.error('Failed to emit offer_submitted notification', e);
+      }
+
       return savedOffer;
     } catch (error) {
       throw error;
@@ -85,12 +102,126 @@ class OfferService {
       loan.status = 'offer_selected';
       loan.interestRate = offer.interestRate;
       loan.repaymentPeriod = offer.repaymentPeriod; // In case the lender proposed a different term
+      loan.selectedLenderId = offer.lenderId;
       await loan.save();
+
+      // Notify selected lender
+      try {
+        await NotificationService.createAndEmit(offer.lenderId, 'offer_accepted', {
+          loanId: loan._id,
+          offerId: offer._id,
+          message: 'Your offer has been accepted by the borrower.',
+          metadata: {
+            amount: loan.amount,
+            interestRate: offer.interestRate
+          }
+        });
+
+        // Notify other lenders that their offers were not selected
+        const otherOffers = await LoanOffer.find({
+          loanId: loan._id,
+          _id: { $ne: offerId }
+        }).lean().exec();
+
+        const notifiedLenders = new Set();
+        for (const other of otherOffers) {
+          if (!other.lenderId || notifiedLenders.has(String(other.lenderId))) continue;
+          notifiedLenders.add(String(other.lenderId));
+          await NotificationService.createAndEmit(other.lenderId, 'offer_accepted', {
+            loanId: loan._id,
+            offerId: offer._id,
+            message: 'Another lender’s offer was accepted for a loan you bid on.',
+            metadata: {
+              amount: loan.amount
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Failed to emit offer_accepted notifications', e);
+      }
 
       return acceptedOffer;
     } catch (error) {
       throw error;
     }
+  }
+
+  /**
+   * Rejects an offer explicitly by the borrower.
+   */
+  static async rejectOffer(offerId, borrowerId) {
+    const offer = await LoanOffer.findById(offerId).populate('loanId');
+    if (!offer) throw new Error('Offer not found');
+
+    const loan = offer.loanId;
+    if (loan.borrowerId.toString() !== borrowerId.toString()) {
+      throw new Error('Not authorized to reject this offer');
+    }
+
+    if (offer.status !== 'pending') {
+      throw new Error('Only pending offers can be rejected');
+    }
+
+    offer.status = 'rejected';
+    await offer.save();
+
+    try {
+      await NotificationService.createAndEmit(offer.lenderId, 'offer_countered', {
+        loanId: loan._id,
+        offerId: offer._id,
+        message: 'Your offer was rejected by the borrower.',
+        metadata: { status: 'rejected' }
+      });
+    } catch (e) {
+      console.error('Failed to emit offer rejection notification', e);
+    }
+
+    return offer;
+  }
+
+  /**
+   * Creates a counter-offer from the borrower to the lender.
+   */
+  static async counterOffer(offerId, borrowerId, { interestRate, message }) {
+    const baseOffer = await LoanOffer.findById(offerId).populate('loanId');
+    if (!baseOffer) throw new Error('Offer not found');
+
+    const loan = baseOffer.loanId;
+    if (loan.borrowerId.toString() !== borrowerId.toString()) {
+      throw new Error('Not authorized to counter this offer');
+    }
+
+    if (baseOffer.status !== 'pending') {
+      throw new Error('Only pending offers can be countered');
+    }
+
+    baseOffer.status = 'countered';
+    await baseOffer.save();
+
+    const counter = new LoanOffer({
+      loanId: loan._id,
+      lenderId: baseOffer.lenderId,
+      interestRate,
+      repaymentPeriod: baseOffer.repaymentPeriod,
+      status: 'pending',
+      parentOfferId: baseOffer._id,
+      message: message || ''
+    });
+
+    const savedCounter = await counter.save();
+
+    try {
+      await NotificationService.createAndEmit(baseOffer.lenderId, 'offer_countered', {
+        loanId: loan._id,
+        offerId: savedCounter._id,
+        message: 'The borrower has sent you a counter-offer.',
+        metadata: { interestRate }
+      });
+    } catch (e) {
+      console.error('Failed to emit offer_countered notification', e);
+    }
+
+    return savedCounter;
   }
 }
 

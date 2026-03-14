@@ -1,6 +1,6 @@
 import React from 'react';
 
-const OfferCard = ({ offer, isBorrower, onAccept }) => {
+const OfferCard = ({ offer, isBorrower, onAccept, onReject, onCounter }) => {
   if (!offer) return null;
 
   const statusConfig = offer.status === 'accepted' 
@@ -35,12 +35,30 @@ const OfferCard = ({ offer, isBorrower, onAccept }) => {
       )}
 
       {isBorrower && offer.status === 'pending' && (
-        <button 
-          onClick={() => onAccept && onAccept(offer._id)}
-          className="w-full bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm py-2 rounded-lg transition-all shadow-sm"
-        >
-          Accept Offer
-        </button>
+        <div className="flex flex-col gap-2">
+          <button 
+            onClick={() => onAccept && onAccept(offer._id)}
+            className="w-full bg-[#174E4F] hover:bg-[#0f3636] text-white font-semibold text-sm py-2 rounded-lg transition-all shadow-sm"
+          >
+            Accept Offer
+          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onCounter && onCounter(offer)}
+              className="flex-1 border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold py-2 rounded-lg transition-all"
+            >
+              Counter
+            </button>
+            <button
+              type="button"
+              onClick={() => onReject && onReject(offer._id)}
+              className="flex-1 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold py-2 rounded-lg transition-all"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

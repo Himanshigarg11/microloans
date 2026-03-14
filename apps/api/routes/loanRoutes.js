@@ -12,8 +12,8 @@ router.post('/', protect, authorize('borrower'), loanController.createLoan);
 
 // @route   GET /api/loans
 // @desc    Get all community loans (typically open_for_offers)
-// @access  Public or Private (Investors)
-router.get('/', loanController.getLoans);
+// @access  Private (Borrowers/Lenders)
+router.get('/', protect, loanController.getLoans);
 
 // @route   GET /api/loans/:id
 // @desc    Get details of a specific loan

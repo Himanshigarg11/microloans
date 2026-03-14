@@ -1,7 +1,11 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { Server } = require('socket.io');
+const { setIO } = require('./socket');
+const { protect } = require('./middleware/authMiddleware');
 
 const authRoutes = require('./routes/authRoutes');
 const loanRoutes = require('./routes/loanRoutes');
@@ -11,8 +15,10 @@ const repaymentRoutes = require('./routes/repaymentRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
+const server = http.createServer(app);
 
 // Middleware
 app.use(cors());
@@ -27,6 +33,7 @@ app.use('/api/repayments', repaymentRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/health', (req, res) => res.status(200).send('OK'));
 
@@ -45,7 +52,24 @@ const startServer = async () => {
 
     await mongoose.connect(uri);
     console.log(`Connected to MongoDB at ${uri}`);
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+    const io = new Server(server, {
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST', 'PATCH']
+      }
+    });
+
+    io.on('connection', (socket) => {
+      const { userId } = socket.handshake.auth || {};
+      if (userId) {
+        socket.join(`user:${userId}`);
+      }
+    });
+
+    setIO(io);
+
+    server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (err) {
     console.error('Failed to connect to MongoDB', err);
     process.exit(1);

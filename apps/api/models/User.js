@@ -78,6 +78,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  propertyValue: {
+    type: Number,
+    required: false,
+  },
+  gold: {
+    type: Number,
+    required: false,
+  },
+  existingLoans: {
+    type: Number,
+    required: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

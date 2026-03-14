@@ -6,27 +6,52 @@ import Pagination from '../components/Pagination';
 import MarketplaceFilters from '../components/MarketplaceFilters';
 import loanService from '../services/loanService';
 import { useToast } from '../context/ToastContext';
-import { Loader2, SearchX, Filter } from 'lucide-react';
+import { Loader2, Filter } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Marketplace = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     minAmount: '',
     maxAmount: '',
+    duration: '',
     minScore: '',
-    repaymentPeriod: ''
+    maxInterest: ''
   });
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1 });
 
   const fetchLoans = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await loanService.getLoans({ ...filters, page: pagination.page, limit: pagination.limit });
-      setLoans(response?.data ?? response ?? []);
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+
+      if (filters.minAmount) params.minAmount = filters.minAmount;
+      if (filters.maxAmount) params.maxAmount = filters.maxAmount;
+      if (filters.duration) params.duration = filters.duration;
+      if (filters.minScore) params.minScore = filters.minScore;
+      if (filters.maxInterest) params.maxInterest = filters.maxInterest;
+
+      const response = await loanService.getLoans(params);
+      const list = response?.data ?? response ?? [];
+
+      const filtered = Array.isArray(list)
+        ? list.filter((loan) => {
+            if (!user) return true;
+            const borrowerId =
+              typeof loan.borrowerId === 'object' ? loan.borrowerId._id : loan.borrowerId;
+            return !borrowerId || String(borrowerId) !== String(user.id);
+          })
+        : [];
+
+      setLoans(filtered);
       setPagination(prev => ({ ...prev, totalPages: response?.totalPages ?? 1 }));
     } catch (err) {
       console.error('Failed to fetch loans:', err);

@@ -1,4 +1,6 @@
 const Loan = require('../models/Loan');
+const LoanScoreService = require('./loanScoreService');
+const NotificationService = require('./notificationService');
 
 class LoanService {
   /**
@@ -9,6 +11,9 @@ class LoanService {
    */
   static async createLoan(loanData) {
     try {
+      // Enforce borrowing capacity using the LoanScore system
+      await LoanScoreService.useScoreForLoan(loanData.borrowerId, loanData.amount);
+
       // Ensure newly created loans default to 'open_for_offers'
       const loan = new Loan({
         ...loanData,
@@ -16,6 +21,22 @@ class LoanService {
       });
       
       const savedLoan = await loan.save();
+
+      // Notify borrower about loan creation
+      try {
+        await NotificationService.createAndEmit(loanData.borrowerId, 'loan_created', {
+          loanId: savedLoan._id,
+          message: `Your loan request for ₹${loanData.amount} has been created.`,
+          metadata: {
+            amount: loanData.amount,
+            repaymentPeriod: loanData.repaymentPeriod
+          }
+        });
+      } catch (e) {
+        // Non-blocking
+        console.error('Failed to emit loan_created notification', e);
+      }
+
       return savedLoan;
     } catch (error) {
       throw error;
@@ -40,7 +61,11 @@ class LoanService {
         dbQuery.status = { $in: ['open_for_offers', 'pending'] };
       }
       
-      if (query.borrowerId) dbQuery.borrowerId = query.borrowerId;
+      if (query.borrowerId) {
+        dbQuery.borrowerId = query.borrowerId;
+      } else if (query.excludeBorrowerId) {
+        dbQuery.borrowerId = { $ne: query.excludeBorrowerId };
+      }
       
       // Amount filters
       if (query.minAmount !== undefined || query.maxAmount !== undefined) {

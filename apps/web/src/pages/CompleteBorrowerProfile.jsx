@@ -12,6 +12,11 @@ const CompleteBorrowerProfile = () => {
   
   const [formData, setFormData] = useState({
     income: '',
+    assets: '',
+    propertyValue: '',
+    gold: '',
+    existingLoans: '',
+    employmentType: '',
     loanPurposeHistory: ''
   });
   const [loading, setLoading] = useState(false);
@@ -27,6 +32,11 @@ const CompleteBorrowerProfile = () => {
       const updatedUser = await authService.submitOnboarding(user.id || user._id, {
         role: 'borrower',
         income: Number(formData.income),
+        assets: formData.assets ? Number(formData.assets) : undefined,
+        propertyValue: formData.propertyValue ? Number(formData.propertyValue) : undefined,
+        gold: formData.gold ? Number(formData.gold) : undefined,
+        existingLoans: formData.existingLoans ? Number(formData.existingLoans) : undefined,
+        employmentType: formData.employmentType || undefined,
         loanPurposeHistory: formData.loanPurposeHistory
       });
       
@@ -61,6 +71,67 @@ const CompleteBorrowerProfile = () => {
               required
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-200 focus:border-[#174E4F]"
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Total Financial Assets (₹)</label>
+              <input
+                type="number"
+                value={formData.assets}
+                onChange={(e) => setFormData({ ...formData, assets: e.target.value })}
+                placeholder="e.g. 200000"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-200 focus:border-[#174E4F]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Property Value (₹)</label>
+              <input
+                type="number"
+                value={formData.propertyValue}
+                onChange={(e) => setFormData({ ...formData, propertyValue: e.target.value })}
+                placeholder="e.g. 1500000"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-200 focus:border-[#174E4F]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Gold / Precious Metals (₹)</label>
+              <input
+                type="number"
+                value={formData.gold}
+                onChange={(e) => setFormData({ ...formData, gold: e.target.value })}
+                placeholder="e.g. 300000"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-200 focus:border-[#174E4F]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Existing Active Loans (count)</label>
+              <input
+                type="number"
+                value={formData.existingLoans}
+                onChange={(e) => setFormData({ ...formData, existingLoans: e.target.value })}
+                placeholder="e.g. 1"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-200 focus:border-[#174E4F]"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Employment Type</label>
+            <select
+              value={formData.employmentType}
+              onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-200 focus:border-[#174E4F] bg-white"
+            >
+              <option value="">Select employment type</option>
+              <option value="salaried">Salaried</option>
+              <option value="government">Government</option>
+              <option value="self_employed">Self-employed</option>
+              <option value="unemployed">Unemployed</option>
+            </select>
           </div>
 
           <div className="space-y-1.5">

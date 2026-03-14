@@ -26,6 +26,7 @@ import MyInvestments from './pages/MyInvestments';
 // Context
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -35,6 +36,7 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
+        <NotificationProvider>
         <BrowserRouter>
         <Routes>
           {/* Public Landing Routes */}
@@ -110,6 +112,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </NotificationProvider>
     </AuthProvider>
     </ToastProvider>
   );

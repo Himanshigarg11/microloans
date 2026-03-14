@@ -5,9 +5,9 @@ const MarketplaceFilters = ({ onFilterChange }) => {
   const [filters, setFilters] = useState({
     minAmount: '',
     maxAmount: '',
-    repaymentPeriod: '',
-    loanScoreRequired: '',
-    maxInterestRate: ''
+    duration: '',
+    minScore: '',
+    maxInterest: ''
   });
 
   const handleChange = (e) => {
@@ -18,15 +18,13 @@ const MarketplaceFilters = ({ onFilterChange }) => {
 
   const handleApply = () => {
     if (onFilterChange) {
-      // Send numeric values or empty strings to parent
-      const submittedFilters = {
+      onFilterChange({
         minAmount: filters.minAmount ? Number(filters.minAmount) : '',
         maxAmount: filters.maxAmount ? Number(filters.maxAmount) : '',
-        repaymentPeriod: filters.repaymentPeriod ? Number(filters.repaymentPeriod) : '',
-        loanScoreRequired: filters.loanScoreRequired ? Number(filters.loanScoreRequired) : '',
-        maxInterestRate: filters.maxInterestRate ? Number(filters.maxInterestRate) / 100 : ''
-      };
-      onFilterChange(submittedFilters);
+        duration: filters.duration ? Number(filters.duration) : '',
+        minScore: filters.minScore ? Number(filters.minScore) : '',
+        maxInterest: filters.maxInterest ? Number(filters.maxInterest) / 100 : ''
+      });
     }
   };
 
@@ -34,9 +32,9 @@ const MarketplaceFilters = ({ onFilterChange }) => {
     const resetFilters = {
       minAmount: '',
       maxAmount: '',
-      repaymentPeriod: '',
-      loanScoreRequired: '',
-      maxInterestRate: ''
+      duration: '',
+      minScore: '',
+      maxInterest: ''
     };
     setFilters(resetFilters);
     if (onFilterChange) onFilterChange(resetFilters);
@@ -73,8 +71,8 @@ const MarketplaceFilters = ({ onFilterChange }) => {
         <div>
           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-1">Duration</label>
           <select
-            value={filters.repaymentPeriod}
-            onChange={(e) => setFilters({...filters, repaymentPeriod: e.target.value})}
+            value={filters.duration}
+            onChange={(e) => setFilters({...filters, duration: e.target.value})}
             className="w-full bg-white border border-gray-200 text-sm px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F] outline-none transition-all"
           >
             <option value="">Any Duration</option>
@@ -89,8 +87,8 @@ const MarketplaceFilters = ({ onFilterChange }) => {
            <input
              type="number"
              placeholder="e.g. 700"
-             value={filters.loanScoreRequired}
-             onChange={(e) => setFilters({...filters, loanScoreRequired: e.target.value})}
+             value={filters.minScore}
+             onChange={(e) => setFilters({...filters, minScore: e.target.value})}
              className="w-full bg-white border border-gray-200 text-sm px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F] outline-none transition-all"
            />
         </div>
@@ -100,8 +98,8 @@ const MarketplaceFilters = ({ onFilterChange }) => {
              type="number"
              placeholder="e.g. 12"
              step="0.5"
-             value={filters.maxInterestRate}
-             onChange={(e) => setFilters({...filters, maxInterestRate: e.target.value})}
+             value={filters.maxInterest}
+             onChange={(e) => setFilters({...filters, maxInterest: e.target.value})}
              className="w-full bg-white border border-gray-200 text-sm px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-[#174E4F]/10 focus:border-[#174E4F] outline-none transition-all"
            />
         </div>

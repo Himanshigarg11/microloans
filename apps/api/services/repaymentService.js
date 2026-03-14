@@ -1,5 +1,7 @@
 const Repayment = require('../models/Repayment');
 const Loan = require('../models/Loan');
+const LoanScoreService = require('./loanScoreService');
+const NotificationService = require('./notificationService');
 
 class RepaymentService {
   /**
@@ -57,6 +59,32 @@ class RepaymentService {
 
       if (shouldUpdateLoan) {
         await loan.save();
+      }
+
+      // Restore score usage for the borrower
+      try {
+        await LoanScoreService.restoreScoreOnRepayment(loan.borrowerId, amountPaid, false);
+      } catch (e) {
+        console.error('Failed to restore score on repayment', e);
+      }
+
+      // Notify lender and borrower about repayment
+      try {
+        if (loan.selectedLenderId) {
+          await NotificationService.createAndEmit(loan.selectedLenderId, 'repayment_made', {
+            loanId: loan._id,
+            message: `A repayment of ₹${amountPaid} was made on a loan you funded.`,
+            metadata: { amountPaid, remainingBalance }
+          });
+        }
+
+        await NotificationService.createAndEmit(loan.borrowerId, 'repayment_made', {
+          loanId: loan._id,
+          message: `You recorded a repayment of ₹${amountPaid} on your loan.`,
+          metadata: { amountPaid, remainingBalance }
+        });
+      } catch (e) {
+        console.error('Failed to emit repayment_made notifications', e);
       }
 
       return savedRepayment;

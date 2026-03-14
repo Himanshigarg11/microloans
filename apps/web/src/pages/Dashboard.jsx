@@ -7,13 +7,15 @@ import { useToast } from '../context/ToastContext';
 import profileService from '../services/profileService';
 import loanService from '../services/loanService';
 import offerService from '../services/offerService';
-import { Loader2, PlusCircle, FileText, ShoppingBag, TrendingUp, ArrowRight } from 'lucide-react';
+import { Loader2, PlusCircle, FileText, ShoppingBag, TrendingUp, ArrowRight, Bell } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
 
 const Dashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, activeRole } = useAuth();
   const { addToast } = useToast();
+  const { notifications } = useNotifications();
   const [profile, setProfile] = useState(null);
   const [loans, setLoans] = useState([]);
   const [investmentCount, setInvestmentCount] = useState(0);
@@ -190,9 +192,39 @@ const Dashboard = () => {
           </div>
         </>
       )}
-
-      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm">
-        <p className="text-sm font-medium text-gray-400 italic">Activity & Notifications will appear here</p>
+      <div className="bg-white border border-gray-200 rounded-xl p-0 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+          <Bell className="w-4 h-4 text-gray-400" />
+          <h3 className="text-sm font-semibold text-gray-900">Activity & Notifications</h3>
+        </div>
+        {notifications.length === 0 ? (
+          <div className="p-10 text-center">
+            <p className="text-sm font-medium text-gray-400 italic">
+              Activity & Notifications will appear here
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+            {notifications.slice(0, 10).map((n) => (
+              <div
+                key={n.id || n._id}
+                className="px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"
+              >
+                <div>
+                  <p className="text-xs font-semibold text-gray-800">{n.message}</p>
+                  {n.metadata?.amount && (
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      Amount: ₹{Number(n.metadata.amount).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400">
+                  {new Date(n.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

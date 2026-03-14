@@ -19,4 +19,14 @@ router.get('/my', protect, authorize('lender'), offerController.getMyOffers);
 // @access  Private (Borrower)
 router.post('/:id/accept', protect, authorize('borrower'), offerController.acceptOffer);
 
+// @route   POST /api/offers/:id/reject
+// @desc    Reject a specific loan offer
+// @access  Private (Borrower)
+router.post('/:id/reject', protect, authorize('borrower'), offerController.rejectOffer);
+
+// @route   POST /api/offers/:id/counter
+// @desc    Send a counter-offer back to a lender
+// @access  Private (Borrower)
+router.post('/:id/counter', protect, authorize('borrower'), offerController.counterOffer);
+
 module.exports = router;

@@ -79,6 +79,58 @@ const acceptOffer = async (req, res) => {
 };
 
 /**
+ * Controller for explicitly rejecting an offer.
+ */
+const rejectOffer = async (req, res) => {
+  try {
+    const { id: offerId } = req.params;
+    const borrowerId = req.user.id;
+
+    const rejected = await OfferService.rejectOffer(offerId, borrowerId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Offer rejected',
+      data: rejected
+    });
+  } catch (error) {
+    console.error('Error rejecting offer:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to reject offer'
+    });
+  }
+};
+
+/**
+ * Controller for sending a counter-offer.
+ */
+const counterOffer = async (req, res) => {
+  try {
+    const { id: offerId } = req.params;
+    const borrowerId = req.user.id;
+    const { interestRate, message } = req.body;
+
+    const counter = await OfferService.counterOffer(offerId, borrowerId, {
+      interestRate,
+      message
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Counter-offer created',
+      data: counter
+    });
+  } catch (error) {
+    console.error('Error creating counter-offer:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create counter-offer'
+    });
+  }
+};
+
+/**
  * Controller for fetching the logged-in lender's offers.
  */
 const getMyOffers = async (req, res) => {
@@ -110,5 +162,7 @@ module.exports = {
   createOffer,
   getOffersForLoan,
   acceptOffer,
-  getMyOffers
+  getMyOffers,
+  rejectOffer,
+  counterOffer
 };

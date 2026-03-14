@@ -19,6 +19,7 @@ const LoanDetails = () => {
   const { user } = useAuth();
   const [loan, setLoan] = useState(null);
   const [offers, setOffers] = useState([]);
+  const [aiInsights, setAiInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -35,7 +36,10 @@ const LoanDetails = () => {
           loanService.getLoanById(id),
           offerService.getLoanOffers(id)
         ]);
-        setLoan(loanRes.data ?? loanRes);
+
+        const loanPayload = loanRes.data ?? loanRes;
+        setLoan(loanPayload);
+        setAiInsights(loanRes.ai || null);
         setOffers(offersRes.data ?? offersRes ?? []);
       } catch (err) {
         console.error('Failed to fetch loan details:', err.friendlyMessage || err.message);
@@ -98,6 +102,64 @@ const LoanDetails = () => {
         type: 'error', 
         title: 'Action Failed', 
         message: err.friendlyMessage || 'Failed to accept this offer.' 
+      });
+    }
+  };
+
+  const handleRejectOffer = async (offerId) => {
+    try {
+      await offerService.rejectOffer(offerId);
+      addToast({
+        type: 'success',
+        title: 'Offer Rejected',
+        message: 'The offer has been rejected.'
+      });
+      const offersRes = await offerService.getLoanOffers(id);
+      setOffers(offersRes.data ?? offersRes ?? []);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Action Failed',
+        message: err.friendlyMessage || 'Failed to reject this offer.'
+      });
+    }
+  };
+
+  const handleCounterOffer = async (offer) => {
+    const currentRate =
+      offer.interestRate < 1 ? offer.interestRate * 100 : offer.interestRate;
+    const input = window.prompt(
+      'Enter your counter interest rate (%)',
+      currentRate.toFixed(1)
+    );
+    if (!input) return;
+    const numeric = Number(input);
+    if (Number.isNaN(numeric) || numeric <= 0) {
+      addToast({
+        type: 'error',
+        title: 'Invalid Rate',
+        message: 'Please enter a valid positive percentage.'
+      });
+      return;
+    }
+
+    try {
+      await offerService.counterOffer(offer._id, {
+        interestRate: numeric / 100,
+        message: `Borrower countered your offer to ${numeric.toFixed(1)}%`
+      });
+      addToast({
+        type: 'success',
+        title: 'Counter Sent',
+        message: 'Your counter-offer has been sent to the lender.'
+      });
+      const offersRes = await offerService.getLoanOffers(id);
+      setOffers(offersRes.data ?? offersRes ?? []);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Action Failed',
+        message: err.friendlyMessage || 'Failed to send counter-offer.'
       });
     }
   };
@@ -257,6 +319,53 @@ const LoanDetails = () => {
             </div>
           </div>
         )}
+        {aiInsights && (
+          <div className="p-6 md:p-8 border-t border-gray-100 bg-slate-50">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">
+              AI Loan Analysis
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Risk Level
+                </p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {aiInsights.riskLevel?.toUpperCase() || 'N/A'}
+                </p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Default Probability
+                </p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {aiInsights.defaultProbability != null
+                    ? `${(aiInsights.defaultProbability * 100).toFixed(1)}%`
+                    : 'N/A'}
+                </p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Recommended Rate
+                </p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {aiInsights.recommendedInterestRate != null
+                    ? `${(aiInsights.recommendedInterestRate * 100).toFixed(1)}%`
+                    : 'N/A'}
+                </p>
+              </div>
+            </div>
+            {aiInsights.riskSummary && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  Summary
+                </p>
+                <p className="text-xs text-gray-700 whitespace-pre-line">
+                  {aiInsights.riskSummary}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Offer Form for Lenders */}
@@ -320,6 +429,8 @@ const LoanDetails = () => {
                   offer={offer} 
                   isBorrower={user && (String(user.id) === String(loan.borrowerId) || (loan.borrowerId?._id && String(user.id) === String(loan.borrowerId._id)))}
                   onAccept={handleAcceptOffer}
+                  onReject={handleRejectOffer}
+                  onCounter={handleCounterOffer}
                 />
               ))}
            </div>

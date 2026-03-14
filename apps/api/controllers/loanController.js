@@ -1,5 +1,8 @@
 const LoanService = require('../services/loanService');
 const LoanLifecycleService = require('../services/loanLifecycleService');
+const NotificationService = require('../services/notificationService');
+const { getOrCreateLoanScore } = require('../services/loanScoreService');
+const { generateRiskInsightSummary } = require('../../../packages/ai');
 
 /**
  * Controller for creating a new loan request.
@@ -41,17 +44,44 @@ const createLoan = async (req, res) => {
  */
 const getLoans = async (req, res) => {
   try {
-    // Extract filter query parameters
-    const { status, minAmount, maxAmount, repaymentPeriod, loanScoreRequired, borrowerId, maxInterestRate, page = 1, limit = 10 } = req.query;
+    // Extract filter query parameters, supporting both old and new names
+    const {
+      status,
+      minAmount,
+      maxAmount,
+      repaymentPeriod,
+      duration,
+      loanScoreRequired,
+      minScore,
+      borrowerId,
+      maxInterestRate,
+      maxInterest,
+      page = 1,
+      limit = 10
+    } = req.query;
     
     const queryParams = {};
     if (status) queryParams.status = status;
     if (minAmount) queryParams.minAmount = Number(minAmount);
     if (maxAmount) queryParams.maxAmount = Number(maxAmount);
-    if (repaymentPeriod) queryParams.repaymentPeriod = Number(repaymentPeriod);
-    if (loanScoreRequired) queryParams.loanScoreRequired = Number(loanScoreRequired);
+
+    const resolvedRepayment = duration || repaymentPeriod;
+    if (resolvedRepayment) queryParams.repaymentPeriod = Number(resolvedRepayment);
+
+    const resolvedScore = minScore || loanScoreRequired;
+    if (resolvedScore) queryParams.loanScoreRequired = Number(resolvedScore);
+
     if (borrowerId) queryParams.borrowerId = borrowerId;
-    if (maxInterestRate !== undefined) queryParams.maxInterestRate = Number(maxInterestRate);
+
+    const resolvedMaxInterest = maxInterest ?? maxInterestRate;
+    if (resolvedMaxInterest !== undefined && resolvedMaxInterest !== '') {
+      queryParams.maxInterestRate = Number(resolvedMaxInterest);
+    }
+
+    // Prevent self-lending: when a lender browses marketplace, exclude own loans
+    if (!borrowerId && req.user && req.user.role === 'lender') {
+      queryParams.excludeBorrowerId = req.user._id.toString();
+    }
 
     // Convert pagination params to numbers
     const pageNum = parseInt(page, 10);
@@ -92,9 +122,50 @@ const getLoanById = async (req, res) => {
       });
     }
 
+    let ai = null;
+    try {
+      const loanScoreDoc = await getOrCreateLoanScore(loan.borrowerId?._id || loan.borrowerId);
+      const loanScoreValue = loanScoreDoc.currentScore;
+
+      const riskSummary = await generateRiskInsightSummary({
+        loanScore: loanScoreValue,
+        amount: loan.amount,
+        termMonths: loan.repaymentPeriod,
+        purpose: loan.purpose || ''
+      });
+
+      let riskLevel = 'medium';
+      let defaultProbability = 0.15;
+      let recommendedInterestRate = 0.12;
+
+      if (loanScoreValue >= 800) {
+        riskLevel = 'low';
+        defaultProbability = 0.03;
+        recommendedInterestRate = 0.08;
+      } else if (loanScoreValue >= 650) {
+        riskLevel = 'medium';
+        defaultProbability = 0.10;
+        recommendedInterestRate = 0.11;
+      } else {
+        riskLevel = 'high';
+        defaultProbability = 0.25;
+        recommendedInterestRate = 0.16;
+      }
+
+      ai = {
+        riskLevel,
+        defaultProbability,
+        recommendedInterestRate,
+        riskSummary
+      };
+    } catch (e) {
+      console.error('AI analysis failed for loan', id, e);
+    }
+
     res.status(200).json({
       success: true,
-      data: loan
+      data: loan,
+      ai
     });
   } catch (error) {
     console.error('Error fetching loan details:', error);
@@ -134,6 +205,23 @@ const fundLoan = async (req, res) => {
   try {
     const { id } = req.params;
     const loan = await LoanLifecycleService.markLoanFunded(id);
+
+    try {
+      // Notify borrower and selected lender that the loan is funded
+      await NotificationService.createAndEmit(loan.borrowerId, 'loan_funded', {
+        loanId: loan._id,
+        message: 'Your loan has been funded and is now active.'
+      });
+
+      if (loan.selectedLenderId) {
+        await NotificationService.createAndEmit(loan.selectedLenderId, 'loan_funded', {
+          loanId: loan._id,
+          message: 'A loan you funded is now active and in repayment.'
+        });
+      }
+    } catch (e) {
+      console.error('Failed to emit loan_funded notifications', e);
+    }
     res.status(200).json({
       success: true,
       message: 'Loan marked as funded',

@@ -31,6 +31,26 @@ const offerService = {
     }
   },
 
+  rejectOffer: async (offerId) => {
+    try {
+      const response = await apiClient.post(`/offers/${offerId}/reject`);
+      return response.data;
+    } catch (error) {
+      console.error('rejectOffer Service Error:', error.friendlyMessage || error.message);
+      throw error;
+    }
+  },
+
+  counterOffer: async (offerId, payload) => {
+    try {
+      const response = await apiClient.post(`/offers/${offerId}/counter`, payload);
+      return response.data;
+    } catch (error) {
+      console.error('counterOffer Service Error:', error.friendlyMessage || error.message);
+      throw error;
+    }
+  },
+
   getMyOffers: async () => {
     try {
       const response = await apiClient.get('/offers/my');
